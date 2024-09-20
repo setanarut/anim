@@ -8,14 +8,12 @@ import "github.com/setanarut/anim"
 
 # Tutorial
 
---
+to do
 
 # Example
 
---
+Run demo on your local machine
 
-| Key   | State     |
-| ----- | --------- |
-| A     | run right |
-| D     | run left  |
-| Space | jump      |
+```zsh
+go run github.com/setanarut/anim/examples/demo@latest
+```
