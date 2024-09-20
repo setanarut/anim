@@ -13,3 +13,9 @@ import "github.com/setanarut/anim"
 # Example
 
 --
+
+| Key   | State     |
+| ----- | --------- |
+| A     | run right |
+| D     | run left  |
+| Space | jump      |
