@@ -1,5 +1,7 @@
 # Anim
 
+![demo](https://github.com/user-attachments/assets/fa7cd502-9bf9-4a88-a83c-df0e23c80e41)
+
 Anim is an easy to use animation player package for Ebitengine v2
 
 ```Go
