@@ -81,9 +81,9 @@ func main() {
 	}
 	spriteSheet := ebiten.NewImageFromImage(img)
 	animPlayer = anim.NewAnimationPlayer(spriteSheet)
-	animPlayer.AddStateAnimation("idle", 0, 0, 32, 32, 5, false, false).FPS = 5
-	animPlayer.AddStateAnimation("run", 0, 32, 32, 32, 8, false, false)
-	animPlayer.AddStateAnimation("jump", 0, 32*2, 32, 32, 4, false, false)
+	animPlayer.NewAnimationState("idle", 0, 0, 32, 32, 5, false, false).FPS = 5
+	animPlayer.NewAnimationState("run", 0, 32, 32, 32, 8, false, false)
+	animPlayer.NewAnimationState("jump", 0, 32*2, 32, 32, 4, false, false)
 	animPlayer.SetState("idle")
 
 	ebiten.SetWindowSize(400, 300)

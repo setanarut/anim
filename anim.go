@@ -9,12 +9,22 @@ import (
 
 // AnimationPlayer plays and manages animations.
 type AnimationPlayer struct {
-	SpriteSheet, CurrentFrame *ebiten.Image
-	Animations                map[string]*Animation
-	Paused                    bool
-	CurrentFrameIndex         int
-	CurrentState              string
-	Tick                      float64
+	// Image atlas for all animation states
+	SpriteSheet *ebiten.Image
+	// Current frame of the current animation.
+	//
+	// The frame is dynamically updated with `AnimationPlayer.Update()`.
+	CurrentFrame *ebiten.Image
+	// Animations for states
+	Animations map[string]*Animation
+	// If true, animations will be paused.
+	Paused bool
+	// Current state name (animation name)
+	CurrentState string
+
+	tick float64
+
+	currentFrameIndex int
 }
 
 // NewAnimationPlayer returns new AnimationPlayer with spriteSheet
@@ -23,54 +33,62 @@ func NewAnimationPlayer(spriteSheet *ebiten.Image) *AnimationPlayer {
 		SpriteSheet:       spriteSheet,
 		Paused:            false,
 		Animations:        make(map[string]*Animation),
-		CurrentFrameIndex: 0,
+		currentFrameIndex: 0,
 	}
 
 }
 
-// AddStateAnimation adds new Animation to this AnimationPlayer and returns the added animation.
+// NewAnimationState appends a new Animation to the AnimationPlayer
+// and returns the Animation. Default FPS is 15
 //
-// x and y are top-left coordinates of the first frame's rectangle.
-// w and h are the width and height of the first frame's rectangle.
-// The sub-rectangles repeat (vertical or horizontal) to the by the frameCount amount.
-func (ap *AnimationPlayer) AddStateAnimation(stateName string, x, y, w, h, frameCount int, pingpong bool, vertical bool) *Animation {
+// The subrectangle moves from left to right (horizontal) or from top to bottom (vertical) by the amount `frameCount`
+//
+// `x` and `y` are top-left coordinates of the first frame's rectangle.
+//
+// `w` and `h` are the width and height of the first frame's rectangle.
+//
+// If `vertical` is false, it will append frames to the right.
+//
+// If `vertical` is true, it will append frames downwards.
+//
+// If `pingPong` is true, it arranges the animation frames (indices) to play back and forth.
+// The second frame and the last frame will be the same.
+//
+//	Example:
+//		pingPong false : [0 1 2 3]
+//		pingPong true : [0 1 2 3 2 1]
+func (ap *AnimationPlayer) NewAnimationState(
+	stateName string,
+	x, y,
+	w, h,
+	frameCount int,
+	pingPong bool,
+	vertical bool) *Animation {
 
-	subImages := []*ebiten.Image{}
-	frameRect := image.Rect(x, y, x+w, y+h)
-	for i := 0; i < frameCount; i++ {
-		subImages = append(subImages, ap.SpriteSheet.SubImage(frameRect).(*ebiten.Image))
-		if vertical {
-			frameRect.Min.Y += h
-			frameRect.Max.Y += h
-		} else {
-			frameRect.Min.X += w
-			frameRect.Max.X += w
-		}
-	}
+	subImages := SubImages(ap.SpriteSheet, x, y, w, h, frameCount, vertical)
 
-	if pingpong {
+	if pingPong {
 		for i := frameCount - 2; i > 0; i-- {
 			subImages = append(subImages, subImages[i])
 		}
 	}
-
-	anim := &Animation{
-		FPS:    15.0,
-		Frames: subImages,
-		Name:   stateName,
-	}
-
+	animation := NewAnimation(stateName, subImages, 15)
 	ap.CurrentState = stateName
-	ap.Animations[stateName] = anim
-	ap.CurrentFrame = ap.Animations[ap.CurrentState].Frames[ap.CurrentFrameIndex]
-
-	return anim
+	ap.Animations[stateName] = animation
+	ap.CurrentFrame = ap.Animations[ap.CurrentState].Frames[ap.currentFrameIndex]
+	return animation
 }
 
-// SetFPS overwrites the FPS of all animations.
-func (ap *AnimationPlayer) SetFPS(fps float64) {
+// CurrentFrameIndex returns current index.
+// May be useful for debugging.
+func (ap *AnimationPlayer) CurrentFrameIndex() int {
+	return ap.currentFrameIndex
+}
+
+// SetAllFPS overwrites the FPS of all animations.
+func (ap *AnimationPlayer) SetAllFPS(FPS float64) {
 	for _, anim := range ap.Animations {
-		anim.FPS = fps
+		anim.FPS = FPS
 	}
 }
 
@@ -90,16 +108,25 @@ func (ap *AnimationPlayer) CurrentStateFPS() float64 {
 	return ap.Animations[ap.State()].FPS
 }
 
-// SetStateReset sets the current animation state. Each time the state changes, the animation resets to the first frame.
-func (ap *AnimationPlayer) SetStateReset(state string) {
+// SetStateFPS sets FPS of the animation state.
+//
+//	// Shortcut func for
+//	AnimationPlayer.Animations[stateName].FPS = 15
+//	Animation.FPS = 15
+func (ap *AnimationPlayer) SetStateFPS(stateName string, FPS float64) {
+	ap.Animations[stateName].FPS = FPS
+}
+
+// SetStateAndReset sets the animation state and resets to the first frame.
+func (ap *AnimationPlayer) SetStateAndReset(state string) {
 	if ap.CurrentState != state {
 		ap.CurrentState = state
-		ap.Tick = 0
-		ap.CurrentFrameIndex = 0
+		ap.tick = 0
+		ap.currentFrameIndex = 0
 	}
 }
 
-// SetState sets the current animation state.
+// SetState sets the animation state.
 func (ap *AnimationPlayer) SetState(state string) {
 	if ap.CurrentState != state {
 		ap.CurrentState = state
@@ -110,33 +137,61 @@ func (ap *AnimationPlayer) SetState(state string) {
 func (ap *AnimationPlayer) PauseAtFrame(frameIndex int) {
 	if frameIndex < len(ap.Animations[ap.State()].Frames) && frameIndex >= 0 {
 		ap.Paused = true
-		ap.CurrentFrameIndex = frameIndex
+		ap.currentFrameIndex = frameIndex
 	}
 }
 
-// Update updates AnimationPlayer
+// Update updates AnimationPlayer. Place this func inside Ebitengine `Game.Update()`.
+//
+//	// example
+//	func (g *Game) Update() error {
+//	animPlayer.Update()
+//	...
 func (ap *AnimationPlayer) Update() {
 	if !ap.Paused {
-		ap.Tick += ap.Animations[ap.CurrentState].FPS / 60.0
-		ap.CurrentFrameIndex = int(math.Floor(ap.Tick))
-		if ap.CurrentFrameIndex >= len(ap.Animations[ap.CurrentState].Frames) {
-			ap.Tick = 0
-			ap.CurrentFrameIndex = 0
+		ap.tick += ap.Animations[ap.CurrentState].FPS / 60.0
+		ap.currentFrameIndex = int(math.Floor(ap.tick))
+		if ap.currentFrameIndex >= len(ap.Animations[ap.CurrentState].Frames) {
+			ap.tick = 0
+			ap.currentFrameIndex = 0
 		}
 	}
-
-	// update image
-	ap.CurrentFrame = ap.Animations[ap.CurrentState].Frames[ap.CurrentFrameIndex]
+	// update current frame
+	ap.CurrentFrame = ap.Animations[ap.CurrentState].Frames[ap.currentFrameIndex]
 }
 
 // Animation for AnimationPlayer
 type Animation struct {
-	Frames []*ebiten.Image
-	FPS    float64
-	Name   string
+	Name   string          // Name of the aimation state
+	Frames []*ebiten.Image // Animation frames
+	FPS    float64         // Animation playback speed (Frames Per Second).
 }
 
-// func oscillate(input, min, max int) int {
-// 	rang := max - min
-// 	return min + int(math.Abs(float64(((input+rang)%(rang*2))-rang)))
-// }
+// NewAnimation returns new Animation
+func NewAnimation(name string, frames []*ebiten.Image, FPS float64) *Animation {
+	return &Animation{
+		Name:   name,
+		Frames: frames,
+		FPS:    FPS,
+	}
+}
+
+// SubImages returns sub-images from spriteSheet image
+func SubImages(spriteSheet *ebiten.Image, x, y, w, h, subImageCount int, vertical bool) []*ebiten.Image {
+
+	subImages := []*ebiten.Image{}
+	frameRect := image.Rect(x, y, x+w, y+h)
+
+	for i := 0; i < subImageCount; i++ {
+		subImages = append(subImages, spriteSheet.SubImage(frameRect).(*ebiten.Image))
+		if vertical {
+			frameRect.Min.Y += h
+			frameRect.Max.Y += h
+		} else {
+			frameRect.Min.X += w
+			frameRect.Max.X += w
+		}
+	}
+	return subImages
+
+}
