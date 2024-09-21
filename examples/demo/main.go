@@ -16,7 +16,6 @@ import (
 
 var animPlayer *anim.AnimationPlayer
 var DIO *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
-var keys []ebiten.Key
 var hud = `
 
 CONTROLS
