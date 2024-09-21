@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/setanarut/anim?status.svg)](https://pkg.go.dev/github.com/setanarut/anim)
+
 # Anim
 
 ![demo](https://github.com/user-attachments/assets/fa7cd502-9bf9-4a88-a83c-df0e23c80e41)
