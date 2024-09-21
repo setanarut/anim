@@ -30,6 +30,7 @@ STATS
 
 Current state: %v
 Current state FPS: %v
+Current index %v
 `
 
 type Game struct {
@@ -64,7 +65,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fmt.Sprintf(
 			hud,
 			animPlayer.CurrentState,
-			animPlayer.CurrentStateFPS()),
+			animPlayer.CurrentStateFPS(),
+			animPlayer.CurrentFrameIndex(),
+		),
 		220,
 		25)
 }
@@ -81,7 +84,7 @@ func main() {
 	spriteSheet := ebiten.NewImageFromImage(img)
 	animPlayer = anim.NewAnimationPlayer(spriteSheet)
 	animPlayer.NewAnimationState("idle", 0, 0, 32, 32, 5, false, false).FPS = 5
-	animPlayer.NewAnimationState("run", 0, 32, 32, 32, 8, false, false)
+	animPlayer.NewAnimationState("run", 0, 32, 32, 32, 8, false, false).FPS = 12
 	animPlayer.NewAnimationState("jump", 0, 32*2, 32, 32, 4, false, false)
 	animPlayer.SetState("idle")
 

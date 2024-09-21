@@ -41,9 +41,39 @@ Let's set the initial state.
 animPlayer.SetState("idle")
 ```
 
+Update animation player
+
+```Go
+func (g *Game) Update() error {
+	animPlayer.Update()
+```
+
+Let's update the states according to the character's movement.
+
+```Go
+if ebiten.IsKeyPressed(ebiten.KeySpace) {
+    animPlayer.SetState("jump")
+} else if ebiten.IsKeyPressed(ebiten.KeyD) {
+    animPlayer.SetState("run")
+} else if ebiten.IsKeyPressed(ebiten.KeyA) {
+    animPlayer.SetState("run")
+    // Flip X axis with *ebiten.DrawImageOptions.GeoM
+    DIO.GeoM.Scale(-1, 1)
+} else {
+    animPlayer.SetState("idle")
+}
+```
+
+Finally let's draw Animation player
+
+```Go
+func (g *Game) Draw(screen *ebiten.Image) {
+	screen.DrawImage(animPlayer.CurrentFrame, DIO)
+```
+
 ## Example
 
-Run demo on your local machine
+Run [demo](./examples/demo/) on your local machine
 
 ```zsh
 go run github.com/setanarut/anim/examples/demo@latest
