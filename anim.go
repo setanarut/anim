@@ -22,8 +22,7 @@ type AnimationPlayer struct {
 	// Current state name (animation name)
 	CurrentState string
 
-	tick float64
-
+	tick              float64
 	currentFrameIndex int
 }
 
@@ -39,24 +38,17 @@ func NewAnimationPlayer(spriteSheet *ebiten.Image) *AnimationPlayer {
 }
 
 // NewAnimationState appends a new Animation to the AnimationPlayer
-// and returns the Animation. Default FPS is 15
+// and returns the Animation.
 //
-// The subrectangle moves from left to right (horizontal) or from top to bottom (vertical) by the amount `frameCount`
+// The default FPS is 15.
 //
-// `x` and `y` are top-left coordinates of the first frame's rectangle.
+// Parameters:
 //
-// `w` and `h` are the width and height of the first frame's rectangle.
-//
-// If `vertical` is false, it will append frames to the right.
-//
-// If `vertical` is true, it will append frames downwards.
-//
-// If `pingPong` is true, it arranges the animation frames (indices) to play back and forth.
-// The second frame and the last frame will be the same.
-//
-//	Example:
-//		pingPong false : [0 1 2 3]
-//		pingPong true : [0 1 2 3 2 1]
+//   - x, y - Top-left coordinates of the first frame's rectangle.
+//   - w, h - Width and height of the first frame's rectangle.
+//   - frameCount - Animation frame count
+//   - vertical - If true, frames are appended vertically, otherwise horizontally.
+//   - pingPong - If true, arranges the animation indexes to play back and forth. [0 1 2 3 2 1]
 func (ap *AnimationPlayer) NewAnimationState(
 	stateName string,
 	x, y,
@@ -68,10 +60,9 @@ func (ap *AnimationPlayer) NewAnimationState(
 	subImages := SubImages(ap.SpriteSheet, x, y, w, h, frameCount, vertical)
 
 	if pingPong {
-		for i := frameCount - 2; i > 0; i-- {
-			subImages = append(subImages, subImages[i])
-		}
+		subImages = MakePingPong(subImages)
 	}
+
 	animation := NewAnimation(stateName, subImages, 15)
 	ap.CurrentState = stateName
 	ap.Animations[stateName] = animation
@@ -194,4 +185,13 @@ func SubImages(spriteSheet *ebiten.Image, x, y, w, h, subImageCount int, vertica
 	}
 	return subImages
 
+}
+
+// MakePingPong arranges the animation indexes to play back and forth.
+// [0 1 2 3] -> [0 1 2 3 2 1]
+func MakePingPong(frames []*ebiten.Image) []*ebiten.Image {
+	for i := len(frames) - 2; i > 0; i-- {
+		frames = append(frames, frames[i])
+	}
+	return frames
 }
