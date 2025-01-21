@@ -113,11 +113,15 @@ func (ap *AnimationPlayer) SetStateFPS(stateName string, FPS float64) {
 	ap.Animations[ap.CurrentAtlas][stateName].FPS = FPS
 }
 
-// SetStateAndReset sets the animation state and resets to the first frame.
-func (ap *AnimationPlayer) SetStateAndReset(state string) {
-	ap.CurrentState = state
-	ap.Tick = 0
-	ap.CurrentIndex = 0
+// SetState sets the animation state and resets to the first frame.
+//
+// If you assign ap.CurrentState = "stateName" directly, the animation will not be reset.
+func (ap *AnimationPlayer) SetState(state string) {
+	if ap.CurrentState != state {
+		ap.CurrentState = state
+		ap.Tick = 0
+		ap.CurrentIndex = 0
+	}
 }
 
 // PauseAtFrame pauses the current animation at the frame. If index is out of range it does nothing.

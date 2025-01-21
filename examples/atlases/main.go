@@ -57,17 +57,17 @@ func (g *Game) Update() error {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		animPlayer.CurrentState = "jump"
+		animPlayer.SetState("jump")
 	} else if ebiten.IsKeyPressed(ebiten.KeyD) {
-		animPlayer.CurrentState = "run"
+		animPlayer.SetState("run")
 	} else if ebiten.IsKeyPressed(ebiten.KeyA) {
-		animPlayer.CurrentState = "run"
+		animPlayer.SetState("run")
 		// FlipX
 		DIO.GeoM.Scale(-1, 1)
 		// Align to zero
 		DIO.GeoM.Translate(float64(animPlayer.CurrentFrame.Bounds().Dx()), 0)
 	} else {
-		animPlayer.CurrentState = "idle"
+		animPlayer.SetState("idle")
 	}
 	DIO.GeoM.Scale(8, 8)
 
