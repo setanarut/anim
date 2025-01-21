@@ -23,26 +23,29 @@ Make new animation player from sprite atlas
 ![runner](https://github.com/user-attachments/assets/54871498-ae7b-4107-adf4-e292aaff47e7)
 
 ```Go
-spriteSheet := ebiten.NewImageFromImage(img)
+spriteSheet := &anim.Atlas{
+	Name:  "Default",
+	Image: ebiten.NewImageFromImage(img),
+}
 animPlayer = anim.NewAnimationPlayer(spriteSheet)
 ```
 
 Let's specify the coordinates of the animations for the player states.
-The figure shows the coordinates for "run" state. `NewAnimationState("run", 0, 32, 32, 32, 8, false, false)`
+The figure shows the coordinates for "run" state. `NewState("run", 0, 32, 32, 32, 8, false, false, 12)`
 
 ![diag](https://github.com/user-attachments/assets/316be3e7-102f-4d3f-b126-637cda387253)
 
 
 ```Go
-animPlayer.NewAnimationState("idle", 0, 0, 32, 32, 5, false, false).FPS = 5
-animPlayer.NewAnimationState("run", 0, 32, 32, 32, 8, false, false)
-animPlayer.NewAnimationState("jump", 0, 32*2, 32, 32, 4, false, false)
+animPlayer.NewState("idle", 0, 0, 32, 32, 5, false, false, 5)
+animPlayer.NewState("run", 0, 32, 32, 32, 8, false, false, 12)
+animPlayer.NewState("jump", 0, 32*2, 32, 32, 4, false, false, 15)
 ```
 
 Let's set the initial state.
 
 ```Go
-animPlayer.SetState("idle")
+animPlayer.CurrentState = "idle"
 ```
 
 Update animation player
@@ -56,15 +59,17 @@ Let's update the states according to the character's movement.
 
 ```Go
 if ebiten.IsKeyPressed(ebiten.KeySpace) {
-    animPlayer.SetState("jump")
+	animPlayer.CurrentState = "jump"
 } else if ebiten.IsKeyPressed(ebiten.KeyD) {
-    animPlayer.SetState("run")
+	animPlayer.CurrentState = "run"
 } else if ebiten.IsKeyPressed(ebiten.KeyA) {
-    animPlayer.SetState("run")
-    // Flip X axis with *ebiten.DrawImageOptions.GeoM
-    DIO.GeoM.Scale(-1, 1)
+	animPlayer.CurrentState = "run"
+	// FlipX
+	DIO.GeoM.Scale(-1, 1)
+	// Align to zero
+	DIO.GeoM.Translate(float64(animPlayer.CurrentFrame.Bounds().Dx()), 0)
 } else {
-    animPlayer.SetState("idle")
+	animPlayer.CurrentState = "idle"
 }
 ```
 
@@ -75,10 +80,20 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.DrawImage(animPlayer.CurrentFrame, DIO)
 ```
 
-## Example
+## Examples
+
+### Simple demo
 
 Run [demo](./examples/demo/) on your local machine
 
 ```zsh
 go run github.com/setanarut/anim/examples/demo@latest
+```
+### Multiple sprite sheet example
+
+Example of alternative sprite sheets with exactly the same coordinates.  
+Run [atlases](./examples/atlases/) on your local machine;
+
+```zsh
+go run github.com/setanarut/anim/examples/atlases@latest
 ```

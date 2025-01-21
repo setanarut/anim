@@ -9,38 +9,50 @@ import (
 
 // AnimationPlayer plays and manages animations.
 type AnimationPlayer struct {
-	// Image atlas for all animation states
-	SpriteSheet *ebiten.Image
 	// Current frame of the current animation.
 	//
 	// The frame is dynamically updated with `AnimationPlayer.Update()`.
 	CurrentFrame *ebiten.Image
-	// Animations for states
-	Animations map[string]*Animation
-	// If true, animations will be paused.
-	Paused bool
+	// Current sprite sheet atlas
+	CurrentAtlas string
 	// Current state name (animation name)
 	CurrentState string
+	// Slice for Sprite sheet variations
+	Atlases []*Atlas
+	// Animations and alternative sprite sheet atlases
+	Animations map[string]map[string]*Animation
+	// If true, animations will be paused.
+	Paused bool
+	// Animation tick
+	Tick float64
+	// Current animation frame index
+	CurrentIndex int
+}
 
-	tick              float64
-	currentFrameIndex int
+// Atlas is a sprite sheet state for animation player.
+//
+// It is used to easily switch between different sprite sheet variations
+// that share the same coordinates.
+type Atlas struct {
+	Name  string
+	Image *ebiten.Image
 }
 
 // NewAnimationPlayer returns new AnimationPlayer with spriteSheet
-func NewAnimationPlayer(spriteSheet *ebiten.Image) *AnimationPlayer {
-	return &AnimationPlayer{
-		SpriteSheet:       spriteSheet,
-		Paused:            false,
-		Animations:        make(map[string]*Animation),
-		currentFrameIndex: 0,
+func NewAnimationPlayer(atlases ...*Atlas) *AnimationPlayer {
+	ap := &AnimationPlayer{
+		Atlases:    atlases,
+		Animations: make(map[string]map[string]*Animation),
 	}
-
+	for _, atlas := range atlases {
+		ap.Animations[atlas.Name] = make(map[string]*Animation)
+	}
+	ap.CurrentAtlas = atlases[0].Name
+	return ap
 }
 
-// NewAnimationState appends a new Animation to the AnimationPlayer
+// NewState appends a new Animation to the AnimationPlayer
 // and returns the Animation.
-//
-// The default FPS is 15.
 //
 // Parameters:
 //
@@ -49,54 +61,47 @@ func NewAnimationPlayer(spriteSheet *ebiten.Image) *AnimationPlayer {
 //   - frameCount - Animation frame count
 //   - vertical - If true, frames are appended vertically, otherwise horizontally.
 //   - pingPong - If true, arranges the animation indexes to play back and forth. [0 1 2 3 2 1]
-func (ap *AnimationPlayer) NewAnimationState(
+//   - FPS - Playback FPS
+func (ap *AnimationPlayer) NewState(
 	stateName string,
 	x, y,
 	w, h,
 	frameCount int,
 	pingPong bool,
-	vertical bool) *Animation {
-
-	subImages := SubImages(ap.SpriteSheet, x, y, w, h, frameCount, vertical)
-
-	if pingPong {
-		subImages = MakePingPong(subImages)
+	vertical bool,
+	FPS float64,
+) {
+	for _, atlas := range ap.Atlases {
+		subImages := SubImages(atlas.Image, x, y, w, h, frameCount, vertical)
+		if pingPong {
+			subImages = MakePingPong(subImages)
+		}
+		animation := NewAnimation(stateName, subImages, FPS)
+		ap.Animations[atlas.Name][stateName] = animation
 	}
-
-	animation := NewAnimation(stateName, subImages, 15)
 	ap.CurrentState = stateName
-	ap.Animations[stateName] = animation
-	ap.CurrentFrame = ap.Animations[ap.CurrentState].Frames[ap.currentFrameIndex]
-	return animation
-}
-
-// CurrentFrameIndex returns current index.
-// May be useful for debugging.
-func (ap *AnimationPlayer) CurrentFrameIndex() int {
-	return ap.currentFrameIndex
+	ap.CurrentFrame = ap.Animations[ap.CurrentAtlas][stateName].Frames[ap.CurrentIndex]
 }
 
 // SetAllFPS overwrites the FPS of all animations.
 func (ap *AnimationPlayer) SetAllFPS(FPS float64) {
-	for _, anim := range ap.Animations {
-		anim.FPS = FPS
+	for _, atlas := range ap.Atlases {
+		for _, anim := range ap.Animations[atlas.Name] {
+			anim.FPS = FPS
+		}
+
 	}
 }
 
 // AddAnimation adds the given animation to this player.
 // Adds the name of the animation as a map key.
 func (ap *AnimationPlayer) AddAnimation(a *Animation) {
-	ap.Animations[a.Name] = a
-}
-
-// State returns current active animation state
-func (ap *AnimationPlayer) State() string {
-	return ap.CurrentState
+	ap.Animations[ap.CurrentAtlas][a.Name] = a
 }
 
 // CurrentStateFPS returns FPS of the current animation state
 func (ap *AnimationPlayer) CurrentStateFPS() float64 {
-	return ap.Animations[ap.State()].FPS
+	return ap.Animations[ap.CurrentAtlas][ap.CurrentState].FPS
 }
 
 // SetStateFPS sets FPS of the animation state.
@@ -105,30 +110,21 @@ func (ap *AnimationPlayer) CurrentStateFPS() float64 {
 //	AnimationPlayer.Animations[stateName].FPS = 15
 //	Animation.FPS = 15
 func (ap *AnimationPlayer) SetStateFPS(stateName string, FPS float64) {
-	ap.Animations[stateName].FPS = FPS
+	ap.Animations[ap.CurrentAtlas][stateName].FPS = FPS
 }
 
 // SetStateAndReset sets the animation state and resets to the first frame.
 func (ap *AnimationPlayer) SetStateAndReset(state string) {
-	if ap.CurrentState != state {
-		ap.CurrentState = state
-		ap.tick = 0
-		ap.currentFrameIndex = 0
-	}
-}
-
-// SetState sets the animation state.
-func (ap *AnimationPlayer) SetState(state string) {
-	if ap.CurrentState != state {
-		ap.CurrentState = state
-	}
+	ap.CurrentState = state
+	ap.Tick = 0
+	ap.CurrentIndex = 0
 }
 
 // PauseAtFrame pauses the current animation at the frame. If index is out of range it does nothing.
-func (ap *AnimationPlayer) PauseAtFrame(frameIndex int) {
-	if frameIndex < len(ap.Animations[ap.State()].Frames) && frameIndex >= 0 {
+func (ap *AnimationPlayer) PauseAtFrame(index int) {
+	if index < len(ap.Animations[ap.CurrentAtlas][ap.CurrentState].Frames) && index >= 0 {
 		ap.Paused = true
-		ap.currentFrameIndex = frameIndex
+		ap.CurrentIndex = index
 	}
 }
 
@@ -140,15 +136,15 @@ func (ap *AnimationPlayer) PauseAtFrame(frameIndex int) {
 //	...
 func (ap *AnimationPlayer) Update() {
 	if !ap.Paused {
-		ap.tick += ap.Animations[ap.CurrentState].FPS / 60.0
-		ap.currentFrameIndex = int(math.Floor(ap.tick))
-		if ap.currentFrameIndex >= len(ap.Animations[ap.CurrentState].Frames) {
-			ap.tick = 0
-			ap.currentFrameIndex = 0
+		ap.Tick += ap.Animations[ap.CurrentAtlas][ap.CurrentState].FPS / 60.0
+		ap.CurrentIndex = int(math.Floor(ap.Tick))
+		if ap.CurrentIndex >= len(ap.Animations[ap.CurrentAtlas][ap.CurrentState].Frames) {
+			ap.Tick = 0
+			ap.CurrentIndex = 0
 		}
 	}
 	// update current frame
-	ap.CurrentFrame = ap.Animations[ap.CurrentState].Frames[ap.currentFrameIndex]
+	ap.CurrentFrame = ap.Animations[ap.CurrentAtlas][ap.CurrentState].Frames[ap.CurrentIndex]
 }
 
 // Animation for AnimationPlayer

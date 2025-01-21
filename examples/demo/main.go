@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 
+	_ "image/jpeg"
 	_ "image/png"
 	"log"
 
@@ -20,14 +21,15 @@ var hud = `
 
 CONTROLS
 
-| Key   | State       |
-| ----- | ---------   |
-| D     | Run right   |
-| A     | Run (flipX) |
-| Space | Jump        |
+| Key   | State        |
+| ----- | ------------ |
+| D     | Run right    |
+| A     | Run (flipX)  |
+| Space | Jump         |
 
 STATS
 
+Current atlas: %v
 Current state: %v
 Current state FPS: %v
 Current index %v
@@ -41,17 +43,17 @@ func (g *Game) Update() error {
 	DIO.GeoM.Reset()
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		animPlayer.SetState("jump")
+		animPlayer.CurrentState = "jump"
 	} else if ebiten.IsKeyPressed(ebiten.KeyD) {
-		animPlayer.SetState("run")
+		animPlayer.CurrentState = "run"
 	} else if ebiten.IsKeyPressed(ebiten.KeyA) {
-		animPlayer.SetState("run")
+		animPlayer.CurrentState = "run"
 		// FlipX
 		DIO.GeoM.Scale(-1, 1)
 		// Align to zero
 		DIO.GeoM.Translate(float64(animPlayer.CurrentFrame.Bounds().Dx()), 0)
 	} else {
-		animPlayer.SetState("idle")
+		animPlayer.CurrentState = "idle"
 	}
 	DIO.GeoM.Scale(8, 8)
 
@@ -64,9 +66,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		screen,
 		fmt.Sprintf(
 			hud,
+			animPlayer.CurrentAtlas,
 			animPlayer.CurrentState,
 			animPlayer.CurrentStateFPS(),
-			animPlayer.CurrentFrameIndex(),
+			animPlayer.CurrentIndex,
 		),
 		220,
 		25)
@@ -81,12 +84,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	spriteSheet := ebiten.NewImageFromImage(img)
+
+	spriteSheet := &anim.Atlas{
+		Name:  "Default",
+		Image: ebiten.NewImageFromImage(img),
+	}
+
 	animPlayer = anim.NewAnimationPlayer(spriteSheet)
-	animPlayer.NewAnimationState("idle", 0, 0, 32, 32, 5, false, false).FPS = 5
-	animPlayer.NewAnimationState("run", 0, 32, 32, 32, 8, false, false).FPS = 12
-	animPlayer.NewAnimationState("jump", 0, 32*2, 32, 32, 4, false, false)
-	animPlayer.SetState("idle")
+
+	animPlayer.NewState("idle", 0, 0, 32, 32, 5, false, false, 5)
+	animPlayer.NewState("run", 0, 32, 32, 32, 8, false, false, 12)
+	animPlayer.NewState("jump", 0, 32*2, 32, 32, 4, false, false, 15)
+	animPlayer.CurrentState = "idle"
 
 	ebiten.SetWindowSize(400, 300)
 	if err := ebiten.RunGame(&Game{}); err != nil {
