@@ -2,7 +2,7 @@
 
 # Anim
 
-![demo](https://github.com/user-attachments/assets/fa7cd502-9bf9-4a88-a83c-df0e23c80e41)
+![demo](https://github.com/user-attachments/assets/15fb4ef9-00a6-412d-af5f-67ff9fa1fb4c)
 
 Anim is an easy to use animation player package for Ebitengine v2
 
