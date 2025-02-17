@@ -37,15 +37,15 @@ The figure shows the coordinates for "run" state. `NewState("run", 0, 32, 32, 32
 
 
 ```Go
-animPlayer.NewState("idle", 0, 0, 32, 32, 5, false, false, 5)
-animPlayer.NewState("run", 0, 32, 32, 32, 8, false, false, 12)
-animPlayer.NewState("jump", 0, 32*2, 32, 32, 4, false, false, 15)
+animPlayer.NewAnim("idle", 0, 0, 32, 32, 5, false, false, 5)
+animPlayer.NewAnim("run", 0, 32, 32, 32, 8, false, false, 12)
+animPlayer.NewAnim("jump", 0, 32*2, 32, 32, 4, false, false, 15)
 ```
 
-Let's set the initial state.
+Let's set the initial animation state.
 
 ```Go
-animPlayer.CurrentState = "idle"
+animPlayer.SetAnim("idle)
 ```
 
 Update animation player
@@ -59,17 +59,17 @@ Let's update the states according to the character's movement.
 
 ```Go
 if ebiten.IsKeyPressed(ebiten.KeySpace) {
-	animPlayer.SetState("jump")
+	animPlayer.SetAnim("jump")
 } else if ebiten.IsKeyPressed(ebiten.KeyD) {
-	animPlayer.SetState("run")
+	animPlayer.SetAnim("run")
 } else if ebiten.IsKeyPressed(ebiten.KeyA) {
-	animPlayer.SetState("run")
+	animPlayer.SetAnim("run")
 	// FlipX
 	DIO.GeoM.Scale(-1, 1)
 	// Align to zero
 	DIO.GeoM.Translate(float64(animPlayer.CurrentFrame.Bounds().Dx()), 0)
 } else {
-	animPlayer.SetState("idle")
+	animPlayer.SetAnim("idle")
 }
 ```
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"image"
 	"math"
 
@@ -22,22 +21,13 @@ import (
 var animPlayer *anim.AnimationPlayer
 var DIO *ebiten.DrawImageOptions = &ebiten.DrawImageOptions{}
 var hud = `
-
 CONTROLS
-
 | Key   | State        |
 | ----- | ------------ |
 | F     | Change atlas |
 | D     | Run right    |
 | A     | Run (flipX)  |
 | Space | Jump         |
-
-STATS
-
-Current atlas: %v
-Current state: %v
-Current state FPS: %v
-Current index %v
 `
 
 type Game struct {
@@ -48,26 +38,26 @@ func (g *Game) Update() error {
 	DIO.GeoM.Reset()
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyF) {
-		switch animPlayer.CurrentAtlas {
+		switch animPlayer.CurrentAtlas() {
 		case "ShiftHue":
-			animPlayer.CurrentAtlas = "Default"
+			animPlayer.Data.CurrentAtlas = "Default"
 		case "Default":
-			animPlayer.CurrentAtlas = "ShiftHue"
+			animPlayer.Data.CurrentAtlas = "ShiftHue"
 		}
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		animPlayer.SetState("jump")
+		animPlayer.SetAnim("jump")
 	} else if ebiten.IsKeyPressed(ebiten.KeyD) {
-		animPlayer.SetState("run")
+		animPlayer.SetAnim("run")
 	} else if ebiten.IsKeyPressed(ebiten.KeyA) {
-		animPlayer.SetState("run")
+		animPlayer.SetAnim("run")
 		// FlipX
 		DIO.GeoM.Scale(-1, 1)
 		// Align to zero
 		DIO.GeoM.Translate(float64(animPlayer.CurrentFrame.Bounds().Dx()), 0)
 	} else {
-		animPlayer.SetState("idle")
+		animPlayer.SetAnim("idle")
 	}
 	DIO.GeoM.Scale(8, 8)
 
@@ -76,17 +66,8 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.DrawImage(animPlayer.CurrentFrame, DIO)
-	ebitenutil.DebugPrintAt(
-		screen,
-		fmt.Sprintf(
-			hud,
-			animPlayer.CurrentAtlas,
-			animPlayer.CurrentState,
-			animPlayer.CurrentStateFPS(),
-			animPlayer.CurrentIndex,
-		),
-		220,
-		25)
+	ebitenutil.DebugPrintAt(screen, hud, 220, 4)
+	ebitenutil.DebugPrintAt(screen, animPlayer.String(), 220, 130)
 }
 
 func (g *Game) Layout(w, h int) (int, int) {
@@ -112,10 +93,10 @@ func main() {
 	}
 	animPlayer = anim.NewAnimationPlayer(defaultAtlas, HueAtlas)
 
-	animPlayer.NewState("idle", 0, 0, 32, 32, 5, false, false, 5)
-	animPlayer.NewState("run", 0, 32, 32, 32, 8, false, false, 12)
-	animPlayer.NewState("jump", 0, 32*2, 32, 32, 4, false, false, 15)
-	animPlayer.CurrentState = "idle"
+	animPlayer.NewAnim("idle", 0, 0, 32, 32, 5, false, false, 5)
+	animPlayer.NewAnim("run", 0, 32, 32, 32, 8, false, false, 12)
+	animPlayer.NewAnim("jump", 0, 32*2, 32, 32, 4, false, false, 15)
+	animPlayer.SetAnim("idle")
 
 	ebiten.SetWindowSize(400, 300)
 	if err := ebiten.RunGame(&Game{}); err != nil {
