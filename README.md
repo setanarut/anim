@@ -31,7 +31,7 @@ animPlayer = anim.NewAnimationPlayer(spriteSheet)
 ```
 
 Let's specify the coordinates of the animations for the player states.
-The figure shows the coordinates for "run" state. `NewState("run", 0, 32, 32, 32, 8, false, false, 12)`
+The figure shows the coordinates for "run" state.
 
 ![diag](https://github.com/user-attachments/assets/316be3e7-102f-4d3f-b126-637cda387253)
 
