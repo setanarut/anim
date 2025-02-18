@@ -38,11 +38,11 @@ func (g *Game) Update() error {
 	DIO.GeoM.Reset()
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyF) {
-		switch animPlayer.CurrentAtlas() {
+		switch animPlayer.Atlas() {
 		case "ShiftHue":
-			animPlayer.Data.CurrentAtlas = "Default"
+			animPlayer.SetAtlas("Default")
 		case "Default":
-			animPlayer.Data.CurrentAtlas = "ShiftHue"
+			animPlayer.SetAtlas("ShiftHue")
 		}
 	}
 

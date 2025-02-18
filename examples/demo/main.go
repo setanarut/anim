@@ -77,7 +77,7 @@ func main() {
 	animPlayer.NewAnim("idle", 0, 0, 32, 32, 5, false, false, 5)
 	animPlayer.NewAnim("run", 0, 32, 32, 32, 8, false, false, 12)
 	animPlayer.NewAnim("jump", 0, 32*2, 32, 32, 4, false, false, 15)
-	animPlayer.Data.CurrentAnim = "idle"
+	animPlayer.SetAnim("idle")
 
 	ebiten.SetWindowSize(400, 300)
 	if err := ebiten.RunGame(&Game{}); err != nil {
