@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const str string = `
+const Str string = `
 Playback state;
 Current Atlas: %v
 Current Anim: %v
@@ -41,19 +41,19 @@ type PlaybackData struct {
 
 // AnimationPlayer plays and manages animations.
 type AnimationPlayer struct {
-	Data *PlaybackData
+	Data PlaybackData
 	// Current frame of the current animation.
 	//
 	// The frame is dynamically updated with `AnimationPlayer.Update()`.
 	CurrentFrame *ebiten.Image
-	Atlases      []*Atlas
+	Atlases      []Atlas
 	// Animations and alternative sprite sheet atlases
 	Animations map[string]map[string]*Animation
 }
 
 func (ap *AnimationPlayer) String() string {
 	return fmt.Sprintf(
-		str,
+		Str,
 		ap.Data.CurrentAtlas,
 		ap.Data.CurrentAnim,
 		ap.Data.Paused,
@@ -73,9 +73,8 @@ type Atlas struct {
 }
 
 // NewAnimationPlayer returns new AnimationPlayer with spriteSheet
-func NewAnimationPlayer(atlases ...*Atlas) *AnimationPlayer {
+func NewAnimationPlayer(atlases ...Atlas) *AnimationPlayer {
 	ap := &AnimationPlayer{
-		Data:       &PlaybackData{},
 		Atlases:    atlases,
 		Animations: make(map[string]map[string]*Animation),
 	}

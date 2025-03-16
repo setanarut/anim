@@ -83,11 +83,11 @@ func main() {
 	// clone runner atlas for colorization
 	draw.Draw(hueImg, img.Bounds(), img, img.Bounds().Min, draw.Src)
 	hueImg = ShiftHue(hueImg, 120).(*image.RGBA)
-	defaultAtlas := &anim.Atlas{
+	defaultAtlas := anim.Atlas{
 		Name:  "Default",
 		Image: ebiten.NewImageFromImage(img),
 	}
-	HueAtlas := &anim.Atlas{
+	HueAtlas := anim.Atlas{
 		Name:  "ShiftHue",
 		Image: ebiten.NewImageFromImage(hueImg),
 	}

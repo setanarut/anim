@@ -23,7 +23,7 @@ Make new animation player from sprite atlas
 ![runner](https://github.com/user-attachments/assets/54871498-ae7b-4107-adf4-e292aaff47e7)
 
 ```Go
-spriteSheet := &anim.Atlas{
+spriteSheet := anim.Atlas{
 	Name:  "Default",
 	Image: ebiten.NewImageFromImage(img),
 }

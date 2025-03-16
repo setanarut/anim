@@ -67,7 +67,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	spriteSheet := &anim.Atlas{
+	spriteSheet := anim.Atlas{
 		Name:  "Default",
 		Image: ebiten.NewImageFromImage(img),
 	}
